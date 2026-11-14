@@ -1,0 +1,66 @@
+{
+  "permission": {
+    "*": "ask",
+    "read": "allow",
+    "write": "allow",
+    "edit": "allow",
+    "path": {
+      "*": "allow"
+    },
+    "external_directory": {
+      "*": "deny"
+    },
+    "bash": {
+      "*": "ask",
+      "cd *": {
+        "action": "deny",
+        "reason": "Changing directory is not allowed. Use relative path directly."
+      },
+      "git *": {
+        "action": "deny",
+        "reason": "`git` command is human-only. Remind or advice the user instead of operating git directly."
+      },
+      "cat *": "allow",
+      "head *": "allow",
+      "tail *": "allow",
+      "less *": "allow",
+      "more *": "allow",
+      "ls *": "allow",
+      "tree *": "allow",
+      "stat *": "allow",
+      "file *": "allow",
+      "wc *": "allow",
+      "du *": "allow",
+      "df *": "allow",
+      "grep *": "allow",
+      "egrep *": "allow",
+      "fgrep *": "allow",
+      "rg *": "allow",
+      "find *": "allow",
+      "fd *": "allow",
+      "diff *": "allow",
+      "cmp *": "allow",
+      "comm *": "allow",
+      "md5sum *": "allow",
+      "sha1sum *": "allow",
+      "sha256sum *": "allow",
+      "cksum *": "allow",
+      "pwd": "allow",
+      "whoami": "allow",
+      "id": "allow",
+      "hostname": "allow",
+      "uname *": "allow",
+      "date": "allow",
+      "uptime": "allow",
+      "ps *": "allow",
+      "printenv *": "allow",
+      "which *": "allow",
+      "type *": "allow",
+      "echo *": "allow",
+      "for *": "allow",
+      "sed *": "allow",
+      "sort *": "allow",
+      "printf *": "allow"
+    }
+  }
+}
