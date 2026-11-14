@@ -1,217 +1,151 @@
 # AGENTS.md
 
-Repository-wide rules for fwb. New code, refactors and reviews must follow this
-document.
+Working agreement for the fwb repository. Apply it to every change, refactor and review.
 
 ## 0. Language
 
-- **Talking to the user**: use the language the user is currently using.
-- **Every file is written in English.** Code, comments, tests, scripts, catalog
-  keys, commit messages, documentation and local notes are all English. The
-  only exceptions are the conversation with the user and the translation
-  catalogs (`internal/handler/catalogs/*.json`), whose purpose is to hold
-  non-English user-facing text. Vendored third-party content is left untouched.
-- **User-facing text never lives in Go code**: it belongs in
-  `internal/handler/catalogs/*.json` and must be provided for every supported
-  language.
-- Do not write non-English comments or error strings in Go sources.
+- Talk to the user in the language the user is currently using.
+- Every file is written in English: code, comments, tests, scripts, catalog keys, commit messages, documentation and local notes.
+- The only exceptions are the conversation with the user and the translation catalogs (`internal/handler/catalogs/*.json`), which exist to hold non-English user-facing text. Vendored third-party content is left untouched.
+- User-facing text never lives in Go code; it lives in catalogs.
 
-## 1. Invariants
+## 1. Working rules
 
-- fwb ships as a **single binary on the WSL side**. Nothing is installed on
-  Windows and no Windows process is kept resident; every Windows operation is a
-  short `powershell.exe` invocation through WSL interop.
-- A custom device's `platform` must be `linux-x64` (Flutter only allows
-  `linux-x64` / `linux-arm64`).
-- Engine switches must be passed through `FLUTTER_ENGINE_SWITCH_*` environment
-  variables; the Windows runner treats argv as Dart entrypoint arguments.
-- Default WSL networking is `networkingMode=mirrored`; the VM service is reached
-  directly and no port tunnel is used.
-- WSL and Windows SDKs must share the same engine revision. fwb downloads the
-  official Windows portable SDK matching the WSL version. **Download, checksum,
-  extract and build failures are fatal; there is no fallback.**
-- A project without `windows/` fails with instructions to run
-  `flutter create --platforms=windows .`. fwb never generates it.
-- The normal loop only edits `lib/`: Dart changes go through VM service hot
-  reload and never touch the Windows disk. The mirror is synced and the native
-  runner rebuilt only when native inputs (pubspec, `windows/`, SDK) change.
+- Do not run commands that modify the user's environment (`fwb install-device`, Windows probes, SDK downloads, writes to `~/.config`) without explicit confirmation.
+- Use the editor tools for file changes. Do not write ad-hoc Python scripts to rewrite source files.
+- Do not modify this file unless the user explicitly asks.
+- Keep changes scoped; do not mix unrelated refactors.
+- Remove dead code, commented-out code and unused exported symbols.
 
-## 2. Layers
+## 2. Project invariants
+
+- fwb is a **single binary on the WSL side**. Nothing is installed on Windows and no Windows process stays resident; Windows work is one-shot `powershell.exe` invocations through WSL interop.
+- A custom device's `platform` is `linux-x64` (Flutter only allows `linux-x64`/`linux-arm64`).
+- Engine switches are passed via `FLUTTER_ENGINE_SWITCH_*` environment variables; the Windows runner treats argv as Dart entrypoint arguments.
+- WSL networking is expected to be `networkingMode=mirrored`; the VM service is reached directly, without a tunnel.
+- WSL and Windows must share an engine revision. fwb provisions the official Windows SDK of the same version. Download/checksum/extract/build failures are fatal; there is no fallback.
+- A project without `windows/` fails with instructions to run `flutter create --platforms=windows .`; fwb never generates it.
+- The normal loop only edits `lib/`: Dart changes use VM-service hot reload and never touch the Windows disk. The mirror is synced and the native runner rebuilt only when native inputs change.
+
+## 3. Layers and layout
 
 ```
-handler ──▶ srv ──▶ domain ◀── infra
-                        ▲
-                     consts (leaf)
-```
-
-- `domain`: entities, value objects, ports (interfaces), error codes.
-  **Standard library only.**
-- `srv`: use-case orchestration. Depends on domain ports only; never imports
-  infra.
-- `infra`: port implementations. `os/exec`, HTTP and filesystem access exist
-  only here.
-- `handler`: CLI parsing, i18n, progress/report rendering, error translation.
-- `consts`: named constants and enum types. Leaf package: it must not import
-  any other internal package; every layer may import it.
-- `cmd/fwb`: the only place that imports every layer; owns fx wiring and the
-  exit code.
-
-Forbidden:
-
-- `fmt.Printf`, `os.Stdout` or user-facing text in `domain` / `srv`.
-- `os/exec`, `net/http` or PowerShell in `srv`.
-- `infra` importing `srv` / `handler`.
-- Using fx outside `cmd`.
-
-## 3. Layout
-
-```
-cmd/fwb/main.go              fx wiring
+cmd/fwb/main.go              fx wiring and exit code
 internal/consts/             all named constants and enum types (leaf)
-internal/domain/             entities / value objects / ports / error type
-internal/srv/                use cases
-internal/infra/              port implementations + scripts/*.ps1.tmpl
-  flutter/                   Flutter adapters (cli.go, parse.go, releases.go)
-internal/handler/            CLI + catalogs/*.json
-pkg/                         reusable helpers (no internal imports)
+internal/domain/             entities, value objects, ports, error type
+internal/srv/                use cases (bridge.go)
+internal/infra/              port implementations
+  flutter/                   cli.go, parse.go, releases.go
+  config.go                  ConfigStore
+  devices.go                 DeviceRepository
+  downloader.go              Downloader
+  mirror.go                  ProjectMirror
+  powershell.go              WindowsHost + embedded scripts/
+  sdk.go                     SDKStore
+internal/handler/            CLI (cobra), i18n, catalogs/, templates/
+pkg/                         reusable helpers; must not import internal/*
 ```
 
-## 4. Naming
+Dependencies flow `handler → srv → domain`, `infra → domain`. `consts` is a leaf package imported by everyone. `cmd/fwb` is the only place that imports all layers and wires fx.
 
-Callers always write the package name, so exported identifiers must read
-correctly as `package.Identifier`.
+## 4. Dependencies and utilities
+
+Prefer, in order:
+
+1. A maintained third-party package.
+2. A helper in `pkg/` (when no library exists, or the wrapper carries project policy).
+3. An inline implementation (last resort).
+
+Never hand-roll standard infrastructure. Current precedent:
+
+| Concern                    | Library                     |
+| -------------------------- | --------------------------- |
+| CLI commands, flags, help  | `spf13/cobra`               |
+| i18n lookup and formatting | `golang.org/x/text/message` |
+| system locale detection    | `jeandeaual/go-locale`      |
+| shell-style tokenizing     | `mattn/go-shellwords`       |
+| downloads                  | `cavaliergopher/grab/v3`    |
+| HTTP requests              | `carlmjohnson/requests`     |
+| progress bars              | `schollz/progressbar/v3`    |
+| recursive copy             | `otiai10/copy`              |
+| atomic writes              | `google/renameio/v2`        |
+| slugs                      | `gosimple/slug`             |
+| dependency injection       | `go.uber.org/fx`            |
+
+`pkg/*` carries its own private constants and must not import `internal/*`.
+
+## 5. Naming
+
+Callers write the package name, so exported names must read correctly as `package.Identifier`.
 
 ```go
 consts.Code          // bad
 consts.ErrorCode     // good
 
-handler.Handler      // bad (no information, repeats the package name)
+handler.Handler      // bad
 handler.CLI          // good
 
 srv.Service          // bad
 srv.Bridge           // good
 ```
 
-Short names are only acceptable when the type lives in a sub-package whose name
-supplies the meaning: `domain/error.Code` → `error.Code`.
-
-- Blacklist: `Manager`, `Service`, `Handler`, `Helper`, `Util`, `Data`, `Info`,
-  `State`, `Version`, `Report`, `Code`.
-- Use role suffixes instead: `BuildState`, `FlutterVersion`, `DoctorReport`,
-  `ConfigStore`, `ProjectMirrorFactory`, `WindowsHost`,
-  `WindowsBuildRequest`, `WindowsSDKReleaseSource`.
-- Name interfaces after capability: `...Store`, `...Repository`, `...Factory`,
-  `...Source`, `...Host`, `...CLI`, `...Reporter`.
-- Error codes use the `ErrorCode` prefix: `consts.ErrorCodeConfigRead`. Do not
-  use `ErrXxx` (that is for sentinel errors).
+- Blacklist: `Manager`, `Service`, `Handler`, `Helper`, `Util`, `Data`, `Info`, `State`, `Version`, `Report`, `Code`.
+- Use role suffixes: `BuildState`, `FlutterVersion`, `DoctorReport`, `ConfigStore`, `ProjectMirrorFactory`, `WindowsHost`, `WindowsSDKReleaseSource`.
+- Interfaces are named after capability: `...Store`, `...Repository`, `...Factory`, `...Source`, `...Host`, `...CLI`, `...Reporter`.
+- Error codes use the `ErrorCode` prefix: `consts.ErrorCodeConfigRead`. Do not use `ErrXxx` (that is for sentinel errors).
 - Constructors: `NewBridge`, `NewCLI`, `NewProject`, `NewError`, `WrapError`.
 - Acronyms are upper-case: `SDK`, `WSL`, `CLI`, `HTTP`, `URL`, `ID`.
 
 File names:
 
 - Lower-case, no underscores except `_test.go`.
-- Do not concatenate words in a file name. When a concept needs more than one
-  word, use a subdirectory: `infra/flutter/cli.go`, `infra/flutter/releases.go`
-  — not `infra/fluttercli.go`.
-- Name the file after its primary type or concept: `srv/bridge.go`,
-  `handler/cli.go`, `infra/downloader.go` — not `service.go`, `handler.go`,
-  `util.go`.
-- One primary concept per file. Split unrelated types into separate files.
+- Never concatenate words in a file name. Use a subdirectory: `infra/flutter/cli.go`, `infra/flutter/releases.go` — not `infra/fluttercli.go`.
+- Name the file after its primary type or concept: `srv/bridge.go`, `handler/cli.go`, `infra/downloader.go` — not `service.go`, `handler.go`, `util.go`.
+- One primary concept per file.
 - A test file matches the file under test: `powershell_test.go`.
 
-## 5. Constants and literals
+## 6. Constants
 
-No hard-coded values in logic. Every non-trivial string, number, duration, file
-mode, path segment, URL, JSON key, environment variable name, CLI flag, event
-code, format string and PowerShell parameter is a named constant.
-
-- **All** constants and enum types for internal code live in `internal/consts`.
-  It is a leaf package: it must not import other internal packages.
-- `pkg/*` packages carry their own private constants and must not import
-  `internal/*`, including `internal/consts`.
-- Split by concern: `paths.go`, `commands.go`, `config.go`, `keys.go`,
-  `errors.go`, `doctor.go`, `infra.go`, `cli.go`.
+- All constants and enum types used by `internal/*` live in `internal/consts`, split by concern: `paths.go`, `commands.go`, `config.go`, `keys.go`, `errors.go`, `doctor.go`, `infra.go`, `cli.go`.
 - No `const` declarations in `domain`, `srv`, `infra` or `handler`.
-- PowerShell scripts receive values through template fields; never embed paths,
-  URLs, flags, encodings or timeouts in a `.ps1` template.
-- A literal is only acceptable in a constant declaration, a struct tag, a test
-  fixture, or as a zero value (`""`, `0`, `nil`).
+- No hard-coded values in logic: strings, numbers, durations, file modes, path segments, URLs, JSON keys, environment variable names, CLI flags, event codes, format strings and PowerShell parameters are named constants.
+- A literal is only acceptable in a constant declaration, a struct tag, a test fixture, or as a zero value (`""`, `0`, `nil`).
 
-## 6. Dependencies and utilities
+## 7. Errors and i18n
 
-When a capability is needed, prefer in this order:
+- Cross-layer errors are `domain.Error{Code, Args, Cause}` created with `domain.NewError` / `domain.WrapError`.
+- Every `ErrorCode` maps to the catalog key `err.<code>`.
+- `srv` emits event codes only (`EventLaunchStarting`, `ProgressSDKDownload`, doctor entry keys); it never formats user-facing text.
+- `handler.Translate` delegates to `golang.org/x/text/message`; `Cause` is translated recursively.
+- Catalogs are embedded JSON and flat maps of key to format string. Supported placeholders are `%s`, `%d`, `%v`; **`%q` is not supported by x/text**.
+- Add new messages to every language. Tests check key parity and placeholder parity.
+- Key conventions: `err.<code>`, `progress.<code>`, `doctor.*`, `cli.*`.
 
-1. A maintained third-party package.
-2. A helper in `pkg/` (when no suitable library exists, or the wrapper carries
-   project policy).
-3. An inline implementation (last resort).
+## 8. CLI
 
-Do not hand-roll standard formats or infrastructure: byte sizes, semantic
-versions, globbing, atomic writes, recursive copies. Focus on business logic.
-`pkg/*` must not import `internal/*`.
+- Built with cobra; no hand-written argument dispatch.
+- `ping`, `install`, `uninstall`, `launch` are hidden custom-device hooks.
+- Help/usage templates live in `internal/handler/templates/*.tmpl`, embedded with `go:embed`, and are localized through the `T` template function.
+- `--help`/`-h` and `--version`/`-v` are cobra flags with localized descriptions.
+- Argument validation uses `cobra.PositionalArgs` wrappers that return localized messages.
+- Unknown-command errors are localized by a small pre-check; cobra exposes no hook for this.
 
-## 7. Resource management
+## 9. Assets and scripts
 
-- Every acquired resource is released with `defer`: files, HTTP bodies,
-  processes, timers, locks. Register the defer before the operation that may
-  fail (for example `defer app.Stop(ctx)` before `app.Start(ctx)`).
-- Never release manually on the success path. A manual release is only
-  acceptable immediately before an operation that requires it (for example
-  closing a file before `os.Rename` on Windows) and must still be paired with a
-  deferred release for error paths.
-- When a deferred close must surface its error, use a named return:
-
-  ```go
-  func copyFile(src, dst string) (err error) {
-      out, err := os.Create(dst)
-      if err != nil {
-          return err
-      }
-      defer func() {
-          if cerr := out.Close(); err == nil {
-              err = cerr
-          }
-      }()
-      _, err = io.Copy(out, src)
-      return err
-  }
-  ```
-
-- Deferred mutations of the result require named results as well. Example:
-  `ParseEngineSwitches` appends the final token in a deferred flush, and the
-  slice is a named return value so the caller sees it.
-
-## 8. Errors
-
-- Cross-layer errors use `domain.Error{Code, Args, Cause}`.
-- Use `domain.NewError(code, args...)` / `domain.WrapError(code, cause, args...)`.
-- Every `ErrorCode` maps to the i18n key `err.<code>`.
-- Never swallow errors: either wrap them with context or explicitly ignore them
-  with a comment explaining why.
-- Do not concatenate user-facing prose into errors; pass paths, versions and
-  other values as `Args`.
-
-## 9. i18n
-
-- The only source of user-facing text is `internal/handler/catalogs/*.json`,
-  embedded with `go:embed`.
-- `srv` emits event codes only: `rep.Event("launch.starting", name)`,
-  `rep.StartProgress("sdk.download", version)`.
-- `handler` translates codes and recursively translates `domain.Error.Cause`.
-- New messages must be added to every language; tests verify matching keys and
-  identical placeholder counts.
-- Key conventions: `err.<code>`, `progress.<code>`, `doctor.*`.
-
-## 10. Assets and scripts
-
-- Static assets (PowerShell scripts, catalogs) are always embedded with
-  `//go:embed`; never written to disk at runtime and never assembled from Go
-  strings.
-- Templates use `text/template` plus `q` (PowerShell single-quote escaping);
-  building scripts with `fmt.Sprintf` is forbidden.
+- PowerShell scripts and catalogs are embedded with `//go:embed`; nothing is written to disk at runtime.
+- PowerShell is rendered with `text/template` plus `q` (single-quote escaping), then executed as `powershell.exe -NoProfile -NonInteractive -EncodedCommand <base64 UTF-16LE>`.
+- Never assemble scripts with `fmt.Sprintf`.
 - Path conversion (`wslpath`) lives in `infra` only.
 
-## 11. Checks
+## 10. Resource management
+
+- Release resources with `defer`: files, HTTP bodies, processes, timers, locks.
+- Register the defer before the operation that may fail, e.g. `defer app.Stop(ctx)` before `app.Start(ctx)`.
+- Never release manually on the success path. A manual release is only acceptable immediately before an operation that requires it (closing a file before `os.Rename` on Windows) and must still have a deferred release for error paths.
+- Use named returns when a deferred close must surface its error, or when a deferred function mutates the result.
+- `os.Exit` skips defers; keep teardown in a function that returns when it matters.
+
+## 11. Checks and tests
 
 ```bash
 go fmt ./...      # use `go fmt`, not bare `gofmt`
@@ -222,21 +156,17 @@ go test ./...
 
 All four must pass before committing.
 
-## 12. Tests
-
 - `domain`: pure logic, table-driven.
-- `handler`: catalog completeness, placeholder parity, language normalization.
+- `handler`: catalog key parity, placeholder parity, language selection, argument formatting.
 - `infra`: parsing helpers.
-- `srv`: cover branches with small fake ports (fingerprint hit/miss, build
-  failure, merge failure).
-- Do not mock the standard library; implement small fake ports instead.
+- `srv`: cover branches with small fake ports (fingerprint hit/miss, build failure, merge failure).
+- Do not mock the standard library; implement small fake ports.
 
-## 13. Forbidden
+## 12. Forbidden
 
-- Dead code, commented-out code, unused exported symbols.
-- Hard-coded user-facing strings in the domain or application layer.
-- Running commands that modify the user's environment (`fwb install-device`,
-  Windows probes in `doctor`, writing `~/.config`, downloading the SDK) without
-  explicit confirmation.
-- Committing `docs/`: it holds local research notes and is listed in
-  `.gitignore`.
+- Hard-coded user-facing strings in domain or application layers.
+- Hand-rolling infrastructure that a maintained library provides.
+- Manual resource release on success paths.
+- Running commands that mutate the user's environment without confirmation.
+- Committing `docs/` (local research notes, listed in `.gitignore`).
+- Updating this file unless the user asks.
