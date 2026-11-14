@@ -80,8 +80,5 @@ func Current() string { return current.String() }
 
 // Translate formats the message identified by key for the current language.
 func Translate(key string, args ...any) string {
-	if printer == nil {
-		return key
-	}
 	return printer.Sprintf(key, args...)
 }

@@ -93,17 +93,13 @@ func (d *downloader) download(ctx context.Context, url, dest string, progress fu
 	for {
 		select {
 		case <-ticker.C:
-			if progress != nil {
-				progress(response.BytesComplete(), response.Size())
-			}
+			progress(response.BytesComplete(), response.Size())
 		case <-response.Done:
 			if err := response.Err(); err != nil {
 				return err
 			}
 			// Report the final byte count so the last frame is accurate.
-			if progress != nil {
-				progress(response.BytesComplete(), response.Size())
-			}
+			progress(response.BytesComplete(), response.Size())
 			return os.Rename(part, dest)
 		case <-ctx.Done():
 			return ctx.Err()

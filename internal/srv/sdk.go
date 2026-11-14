@@ -77,7 +77,7 @@ func (p *sdkProvider) Ensure(ctx context.Context, want domain.FlutterVersion, re
 	}
 	url := base + consts.ReleaseArchivePath + release.Archive
 
-	emit(rep, consts.EventSDKDownloading, want.Framework, want.Channel)
+	rep.Event(consts.EventSDKDownloading, want.Framework, want.Channel)
 	sdkRoot, err := p.store.Root(ctx)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (p *sdkProvider) Ensure(ctx context.Context, want domain.FlutterVersion, re
 	// Register the cleanup before the download: a failed or aborted transfer
 	// must not leave a multi-gigabyte archive behind.
 	defer os.Remove(archive)
-	gauge := meter(rep, consts.ProgressSDKDownload, want.Framework)
+	gauge := rep.StartProgress(consts.ProgressSDKDownload, want.Framework)
 	if err := p.download(ctx, url, archive, gauge); err != nil {
 		return nil, domain.WrapError(consts.ErrorCodeSDKDownload, err, url)
 	}
@@ -104,7 +104,7 @@ func (p *sdkProvider) Ensure(ctx context.Context, want domain.FlutterVersion, re
 	if err != nil {
 		return nil, err
 	}
-	emit(rep, consts.EventSDKExtracting, sdk.Root)
+	rep.Event(consts.EventSDKExtracting, sdk.Root)
 	if err := p.host.Extract(ctx, archive, sdk.Root); err != nil {
 		return nil, domain.WrapError(consts.ErrorCodeSDKExtract, err)
 	}
@@ -114,7 +114,7 @@ func (p *sdkProvider) Ensure(ctx context.Context, want domain.FlutterVersion, re
 	if err := p.store.MarkReady(ctx, want); err != nil {
 		return nil, err
 	}
-	emit(rep, consts.EventSDKReady)
+	rep.Event(consts.EventSDKReady)
 	return sdk, nil
 }
 

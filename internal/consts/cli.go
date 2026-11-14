@@ -53,12 +53,6 @@ const (
 	KeyFlagAll      = "cli.flag.all"
 	KeyCleanFlagSDK = "cli.flag.sdk"
 
-	KeyUsageLabel        = "cli.usage"
-	KeyAvailableCommands = "cli.availableCommands"
-	KeyFlagsLabel        = "cli.flags"
-	KeyGlobalFlagsLabel  = "cli.globalFlags"
-	KeyHelpHint          = "cli.helpHint"
-
 	KeyUsageConfigSet   = "usage.config.set"
 	KeyUsageConfigGet   = "usage.config.get"
 	KeyUsageConfigUnset = "usage.config.unset"

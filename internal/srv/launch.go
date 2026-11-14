@@ -46,7 +46,7 @@ func (l *Launcher) Launch(ctx context.Context, engineOptions string, out io.Writ
 	if err != nil {
 		return
 	}
-	emit(rep, consts.EventLaunchWSLVersion, want.Framework, want.ShortEngine())
+	rep.Event(consts.EventLaunchWSLVersion, want.Framework, want.ShortEngine())
 
 	windowsSDK, err := l.sdks.Ensure(ctx, want, rep)
 	if err != nil {
@@ -67,7 +67,7 @@ func (l *Launcher) Launch(ctx context.Context, engineOptions string, out io.Writ
 		state.EngineRevision != want.EngineRevision ||
 		state.Exe != exe
 	if needsBuild {
-		emit(rep, consts.EventLaunchPreparingBuild)
+		rep.Event(consts.EventLaunchPreparingBuild)
 		if err := m.Sync(); err != nil {
 			return err
 		}
@@ -98,7 +98,7 @@ func (l *Launcher) Launch(ctx context.Context, engineOptions string, out io.Writ
 	}
 	stopSession(ctx, l.host, m)
 
-	emit(rep, consts.EventLaunchStarting, filepath.Base(exe))
+	rep.Event(consts.EventLaunchStarting, filepath.Base(exe))
 	// The runner records its pid in the session file: stop the app when the log
 	// stream fails, otherwise drop the stale session.
 	defer func() {

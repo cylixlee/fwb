@@ -39,7 +39,6 @@ internal/srv/                use cases, one file per use case
   device.go                  DeviceHooks: ping, install, uninstall, registration
   clean.go                   Cleaner: mirror and SDK cache removal
   doctor.go                  Diagnostics: table-driven probes
-  event.go                   emit / meter helpers over the event reporter
   session.go                 stopSession: terminate the app in the session file
 internal/infra/              port implementations
   flutter/                   cli.go, parse.go, releases.go

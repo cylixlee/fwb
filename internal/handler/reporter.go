@@ -35,13 +35,10 @@ func newReporter(out io.Writer, interactive bool) *reporter {
 	return &reporter{out: out, interactive: interactive}
 }
 
-// newStdoutReporter builds the reporter bound to the process stdout.
-func newStdoutReporter() *reporter {
+// NewReporter returns the event reporter bound to the process stdout.
+func NewReporter() domain.EventReporter {
 	return newReporter(os.Stdout, term.IsTerminal(int(os.Stdout.Fd())))
 }
-
-// NewReporter returns the event reporter bound to the process stdout.
-func NewReporter() domain.EventReporter { return newStdoutReporter() }
 
 func (r *reporter) Event(code string, args ...any) {
 	fmt.Fprintf(r.out, consts.FormatLogEvent, Translate(code, args...))

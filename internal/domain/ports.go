@@ -99,7 +99,6 @@ type ProjectMirror interface {
 	Path() string
 	SessionFile() string
 	SessionPID() (int, bool)
-	WriteSession(pid int) error
 	ClearSession()
 	Stage(localPath string) error
 	Sync() error
@@ -111,13 +110,11 @@ type ProjectMirror interface {
 	Remove() error
 }
 
-// MirrorFactory opens projects and their mirrors.
+// MirrorFactory resolves the current project and its mirror.
 type ProjectMirrorFactory interface {
-	Open(ctx context.Context) (Project, error)
-	Root(ctx context.Context) (string, error)
-	For(ctx context.Context, p Project) (ProjectMirror, error)
 	// Current opens the project in the working directory and returns its mirror.
 	Current(ctx context.Context) (ProjectMirror, error)
+	Root(ctx context.Context) (string, error)
 }
 
 // DeviceRepository persists custom-device definitions.
