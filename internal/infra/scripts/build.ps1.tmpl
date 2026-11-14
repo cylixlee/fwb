@@ -1,0 +1,6 @@
+{{if .PubCache}}$env:{{.PubCacheEnv}} = {{q .PubCache}}{{end}}
+{{if .PubHostedURL}}$env:{{.PubHostedURLEnv}} = {{q .PubHostedURL}}{{end}}
+{{if .StorageBaseURL}}$env:{{.StorageBaseURLEnv}} = {{q .StorageBaseURL}}{{end}}
+Set-Location -LiteralPath {{q .Mirror}}
+& {{q .Bat}} {{.Args}}
+exit $LASTEXITCODE

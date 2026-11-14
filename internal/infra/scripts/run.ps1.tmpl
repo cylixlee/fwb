@@ -1,0 +1,8 @@
+$env:{{.SwitchesVariable}} = '{{len .Switches}}'
+{{range $i, $s := .Switches}}$env:{{$.SwitchVariablePrefix}}{{$i}} = {{q $s}}
+{{end}}
+Set-Location -LiteralPath {{q .Dir}}
+$p = Start-Process -FilePath {{q .Exe}} -WorkingDirectory {{q .Dir}} -NoNewWindow -PassThru
+Set-Content -LiteralPath {{q .SessionFile}} -Value $p.Id -Encoding {{.SessionEncoding}}
+$p.WaitForExit()
+exit $p.ExitCode

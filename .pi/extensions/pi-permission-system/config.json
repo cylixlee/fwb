@@ -60,7 +60,19 @@
       "for *": "allow",
       "sed *": "allow",
       "sort *": "allow",
-      "printf *": "allow"
+      "printf *": "allow",
+      "python *": {
+        "action": "deny",
+        "reason": "Do not rely on python or other interpreter. This is very dangerous and could bypass permission system."
+      },
+      "python3 *": {
+        "action": "deny",
+        "reason": "Do not rely on python or other interpreter. This is very dangerous and could bypass permission system."
+      },
+      "gofmt *": {
+        "action": "deny",
+        "reason": "Use `go fmt` instead."
+      }
     }
   }
 }

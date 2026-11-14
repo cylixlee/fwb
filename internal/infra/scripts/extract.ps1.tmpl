@@ -1,0 +1,11 @@
+$zip = {{q .Zip}}
+$dest = {{q .Dest}}
+$tar = Get-Command {{q .Tar}} -ErrorAction SilentlyContinue
+if ($tar) {
+  & $tar.Source -xf $zip -C $dest
+  if ($LASTEXITCODE -ne 0) {
+    throw ({{q .TarFailedFormat}} -f $LASTEXITCODE)
+  }
+} else {
+  {{.ExpandArchive}} -LiteralPath $zip -DestinationPath $dest -Force
+}

@@ -1,0 +1,9 @@
+$p = Get-Process -Id {{.PID}} -ErrorAction SilentlyContinue
+if ($p) {
+  $null = $p.CloseMainWindow()
+  Start-Sleep -Milliseconds {{.CloseTimeoutMilliseconds}}
+  $p.Refresh()
+  if (-not $p.HasExited) {
+    Stop-Process -Id {{.PID}} -Force -ErrorAction SilentlyContinue
+  }
+}
