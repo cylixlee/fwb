@@ -21,7 +21,7 @@ type Launcher struct {
 	host    domain.WindowsHost
 	flutter domain.WSLFlutterCLI
 	mirrors domain.ProjectMirrorFactory
-	sdks    *SDKProvider
+	sdks    domain.SDKProvider
 }
 
 // NewLauncher wires the launch use case.
@@ -30,7 +30,7 @@ func NewLauncher(
 	host domain.WindowsHost,
 	flutter domain.WSLFlutterCLI,
 	mirrors domain.ProjectMirrorFactory,
-	sdks *SDKProvider,
+	sdks domain.SDKProvider,
 ) *Launcher {
 	return &Launcher{cfg: cfg, host: host, flutter: flutter, mirrors: mirrors, sdks: sdks}
 }

@@ -89,6 +89,11 @@ type SDKStore interface {
 	Checksum(path string) (string, error)
 }
 
+// SDKProvider provisions the Windows SDK that matches a WSL Flutter version.
+type SDKProvider interface {
+	Ensure(ctx context.Context, want FlutterVersion, rep EventReporter) (*WindowsSDK, error)
+}
+
 // Mirror is the Windows-side project mirror.
 type ProjectMirror interface {
 	Path() string

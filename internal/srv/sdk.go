@@ -10,8 +10,8 @@ import (
 	"github.com/cylixlee/fwb/internal/domain"
 )
 
-// SDKProvider installs and caches Windows Flutter SDKs.
-type SDKProvider struct {
+// sdkProvider installs and caches Windows Flutter SDKs.
+type sdkProvider struct {
 	cfg        domain.ConfigStore
 	host       domain.WindowsHost
 	releases   domain.WindowsSDKReleaseSource
@@ -26,12 +26,12 @@ func NewSDKProvider(
 	releases domain.WindowsSDKReleaseSource,
 	downloader domain.Downloader,
 	store domain.SDKStore,
-) *SDKProvider {
-	return &SDKProvider{cfg: cfg, host: host, releases: releases, downloader: downloader, store: store}
+) domain.SDKProvider {
+	return &sdkProvider{cfg: cfg, host: host, releases: releases, downloader: downloader, store: store}
 }
 
 // Ensure returns a usable Windows SDK for want, downloading it when needed.
-func (p *SDKProvider) Ensure(ctx context.Context, want domain.FlutterVersion, rep domain.EventReporter) (*domain.WindowsSDK, error) {
+func (p *sdkProvider) Ensure(ctx context.Context, want domain.FlutterVersion, rep domain.EventReporter) (*domain.WindowsSDK, error) {
 	if override := strings.TrimSpace(p.cfg.Get(consts.ConfigKeyWindowsFlutter)); override != "" {
 		rootWSL := override
 		if !strings.HasPrefix(rootWSL, consts.WSLPathPrefix) {
@@ -120,7 +120,7 @@ func (p *SDKProvider) Ensure(ctx context.Context, want domain.FlutterVersion, re
 
 // download streams the archive through the meter. The meter is finished on
 // every path: a failed transfer aborts it instead of claiming completion.
-func (p *SDKProvider) download(ctx context.Context, url, archive string, gauge domain.OperationProgress) (err error) {
+func (p *sdkProvider) download(ctx context.Context, url, archive string, gauge domain.OperationProgress) (err error) {
 	defer func() {
 		if err != nil {
 			gauge.Abort()
