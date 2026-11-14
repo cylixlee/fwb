@@ -40,6 +40,9 @@ func newStdoutReporter() *reporter {
 	return newReporter(os.Stdout, term.IsTerminal(int(os.Stdout.Fd())))
 }
 
+// NewReporter returns the event reporter bound to the process stdout.
+func NewReporter() domain.EventReporter { return newStdoutReporter() }
+
 func (r *reporter) Event(code string, args ...any) {
 	fmt.Fprintf(r.out, consts.FormatLogEvent, Translate(code, args...))
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/cylixlee/fwb/internal/consts"
 	"github.com/cylixlee/fwb/internal/domain"
+	"github.com/cylixlee/fwb/internal/infra/mirror"
 	"github.com/cylixlee/fwb/pkg/fsx"
 )
 
@@ -25,7 +26,7 @@ func NewSDKStore(cfg domain.ConfigStore, host domain.WindowsHost) domain.SDKStor
 }
 
 func (s *sdkStore) Root(ctx context.Context) (string, error) {
-	root, err := mirrorRoot(ctx, s.cfg, s.host)
+	root, err := mirror.Root(ctx, s.cfg, s.host)
 	if err != nil {
 		return "", err
 	}

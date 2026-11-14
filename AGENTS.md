@@ -33,20 +33,32 @@ Working agreement for the fwb repository. Apply it to every change, refactor and
 cmd/fwb/main.go              fx wiring and exit code
 internal/consts/             all named constants and enum types (leaf)
 internal/domain/             entities, value objects, ports, error type
-internal/srv/                use cases (bridge.go)
+internal/srv/                use cases, one file per use case
+  launch.go                  Launcher: SDK, build, merge, run
+  sdk.go                     SDKProvider: Windows SDK provisioning
+  device.go                  DeviceHooks: ping, install, uninstall, registration
+  clean.go                   Cleaner: mirror and SDK cache removal
+  doctor.go                  Diagnostics: table-driven probes
+  event.go                   emit / meter helpers over the event reporter
+  session.go                 stopSession: terminate the app in the session file
 internal/infra/              port implementations
   flutter/                   cli.go, parse.go, releases.go
+  mirror/                    ProjectMirror: mirror.go, project.go, fingerprint.go,
+                             session.go, state.go, locate.go
+  powershell/                WindowsHost + embedded scripts/: host.go, powershell.go,
+                             script.go, path.go, env.go, version.go, extract.go,
+                             build.go, run.go
   config.go                  ConfigStore
   devices.go                 DeviceRepository
   downloader.go              Downloader
-  mirror.go                  ProjectMirror
-  powershell.go              WindowsHost + embedded scripts/
   sdk.go                     SDKStore
-internal/handler/            CLI (cobra), i18n, catalogs/, templates/
+internal/handler/            i18n, catalogs/, templates/
+  cli/                       cobra command tree: New, cli.go, hooks.go, config.go,
+                             commands.go, args.go, output.go
 pkg/                         reusable helpers; must not import internal/*
 ```
 
-Dependencies flow `handler → srv → domain`, `infra → domain`. `consts` is a leaf package imported by everyone. `cmd/fwb` is the only place that imports all layers and wires fx.
+Dependencies flow `handler/cli → handler`, `handler/cli → srv → domain`, `infra/* → domain`, `infra/mirror → infra/powershell`. `consts` is a leaf package imported by everyone. `cmd/fwb` is the only place that imports all layers and wires fx.
 
 ## 4. Dependencies and utilities
 
@@ -82,27 +94,29 @@ Callers write the package name, so exported names must read correctly as `packag
 consts.Code          // bad
 consts.ErrorCode     // good
 
-handler.Handler      // bad
-handler.CLI          // good
+mirror.Mirror        // bad
+mirror.NewFactory    // good
 
-srv.Service          // bad
-srv.Bridge           // good
+cli.CLI              // bad
+cli.Struct           // good
 ```
 
 - Blacklist: `Manager`, `Service`, `Handler`, `Helper`, `Util`, `Data`, `Info`, `State`, `Version`, `Report`, `Code`.
 - Use role suffixes: `BuildState`, `FlutterVersion`, `DoctorReport`, `ConfigStore`, `ProjectMirrorFactory`, `WindowsHost`, `WindowsSDKReleaseSource`.
 - Interfaces are named after capability: `...Store`, `...Repository`, `...Factory`, `...Source`, `...Host`, `...CLI`, `...Reporter`.
 - Error codes use the `ErrorCode` prefix: `consts.ErrorCodeConfigRead`. Do not use `ErrXxx` (that is for sentinel errors).
-- Constructors: `NewBridge`, `NewCLI`, `NewProject`, `NewError`, `WrapError`.
+- Constructors: `New` when the package name already names the type (`cli.New`, `mirror.NewFactory`, `powershell.NewHost`), otherwise `NewX` (`NewLauncher`, `NewSDKProvider`, `NewCLI`, `NewProject`, `NewError`, `WrapError`).
 - Acronyms are upper-case: `SDK`, `WSL`, `CLI`, `HTTP`, `URL`, `ID`.
 
 File names:
 
 - Lower-case, no underscores except `_test.go`.
 - Never concatenate words in a file name. Use a subdirectory: `infra/flutter/cli.go`, `infra/flutter/releases.go` — not `infra/fluttercli.go`.
-- Name the file after its primary type or concept: `srv/bridge.go`, `handler/cli.go`, `infra/downloader.go` — not `service.go`, `handler.go`, `util.go`.
+- Name the file after its primary type or concept: `srv/launch.go`, `handler/cli/cli.go`, `infra/downloader.go` — not `service.go`, `handler.go`, `util.go`.
 - One primary concept per file.
 - A test file matches the file under test: `powershell_test.go`.
+- A file stays under 200 lines. When it grows past that, split it in place into a subpackage directory named after the file, one concept per file: `infra/mirror.go` becomes `infra/mirror/{mirror,project,fingerprint,session,state,locate}.go`, `handler/cli.go` becomes `handler/cli/{cli,hooks,config,commands,args,output}.go`. Exported names in the new package must still read correctly from the caller (`mirror.NewFactory`, not `mirror.NewMirrorFactory`).
+- Do not create a package that would hold a single file under 200 lines: keep it as one more file in the existing package instead (`internal/srv` holds `launch.go`, `sdk.go`, `device.go`, …). A new package needs either several files or a file that would otherwise exceed 200 lines.
 
 ## 6. Constants
 

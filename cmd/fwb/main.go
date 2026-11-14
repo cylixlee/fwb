@@ -12,9 +12,11 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/cylixlee/fwb/internal/consts"
-	"github.com/cylixlee/fwb/internal/handler"
+	"github.com/cylixlee/fwb/internal/handler/cli"
 	"github.com/cylixlee/fwb/internal/infra"
 	"github.com/cylixlee/fwb/internal/infra/flutter"
+	"github.com/cylixlee/fwb/internal/infra/mirror"
+	"github.com/cylixlee/fwb/internal/infra/powershell"
 	"github.com/cylixlee/fwb/internal/srv"
 )
 
@@ -33,17 +35,21 @@ func execute() int {
 		fx.NopLogger,
 		fx.Provide(
 			infra.NewConfigStore,
-			infra.NewWindowsHost,
+			powershell.NewHost,
 			flutter.NewCLI,
 			infra.NewDownloader,
 			flutter.NewReleaseSource,
 			infra.NewSDKStore,
-			infra.NewProjectMirrorFactory,
+			mirror.NewFactory,
 			infra.NewDeviceRepository,
-			srv.NewBridge,
-			handler.NewCLI,
+			srv.NewSDKProvider,
+			srv.NewLauncher,
+			srv.NewDeviceHooks,
+			srv.NewCleaner,
+			srv.NewDiagnostics,
+			cli.New,
 		),
-		fx.Invoke(func(h *handler.CLI) {
+		fx.Invoke(func(h *cli.Struct) {
 			exitCode = h.Execute(ctx, os.Args[1:])
 		}),
 	)

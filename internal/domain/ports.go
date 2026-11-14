@@ -111,6 +111,8 @@ type ProjectMirrorFactory interface {
 	Open(ctx context.Context) (Project, error)
 	Root(ctx context.Context) (string, error)
 	For(ctx context.Context, p Project) (ProjectMirror, error)
+	// Current opens the project in the working directory and returns its mirror.
+	Current(ctx context.Context) (ProjectMirror, error)
 }
 
 // DeviceRepository persists custom-device definitions.
