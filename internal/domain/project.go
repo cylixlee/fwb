@@ -4,8 +4,8 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"path/filepath"
-	"strings"
-	"unicode"
+
+	"github.com/gosimple/slug"
 
 	"github.com/cylixlee/fwb/internal/consts"
 )
@@ -23,23 +23,10 @@ func NewProject(root string) Project {
 
 // ID is the stable mirror identity: "<name>-<sha1(root)[:MirrorIDHashLength]>".
 func (p Project) ID() string {
+	name := slug.Make(p.Name)
+	if name == "" {
+		name = consts.MirrorIDFallbackSlug
+	}
 	sum := sha1.Sum([]byte(p.Root))
-	return sanitize(p.Name) + consts.MirrorIDSeparator + hex.EncodeToString(sum[:])[:consts.MirrorIDHashLength]
-}
-
-func sanitize(s string) string {
-	var b strings.Builder
-	for _, r := range s {
-		switch {
-		case unicode.IsLetter(r), unicode.IsDigit(r),
-			strings.ContainsRune(consts.MirrorIDAllowedPunctuation, r):
-			b.WriteRune(r)
-		default:
-			b.WriteString(consts.MirrorIDReplacement)
-		}
-	}
-	if b.Len() == 0 {
-		return consts.MirrorIDFallbackSlug
-	}
-	return b.String()
+	return name + consts.MirrorIDSeparator + hex.EncodeToString(sum[:])[:consts.MirrorIDHashLength]
 }

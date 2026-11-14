@@ -39,12 +39,10 @@ const (
 
 // Mirror identity.
 const (
-	MirrorIDHashLength         = 12
-	MirrorIDFallbackSlug       = "project"
-	MirrorIDSeparator          = "-"
-	MirrorIDReplacement        = "-"
-	MirrorIDAllowedPunctuation = "-_."
-	ShortEngineLength          = 12
+	MirrorIDHashLength   = 12
+	MirrorIDFallbackSlug = "project"
+	MirrorIDSeparator    = "-"
+	ShortEngineLength    = 12
 )
 
 // Error text format used by domain.Error.Error().

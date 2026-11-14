@@ -2,18 +2,20 @@ package consts
 
 import "time"
 
-// CLI flags and commands that are not part of the shared command vocabulary.
+// CLI names and flags.
 const (
-	FlagVersion      = "--version"
-	FlagVersionShort = "-v"
-	FlagHelp         = "--help"
-	FlagHelpShort    = "-h"
-	FlagAll          = "--all"
-	FlagAllShort     = "-a"
-	FlagSDK          = "sdk"
+	CommandName = "fwb"
+
+	FlagHelp    = "help"
+	FlagVersion = "version"
+	FlagAll     = "all"
+	FlagSDK     = "sdk"
+
+	ShorthandHelp    = "h"
+	ShorthandVersion = "v"
+	ShorthandAll     = "a"
 
 	ArgumentSeparator = " "
-	EmptyUsage        = ""
 )
 
 // Catalog files.
@@ -22,23 +24,8 @@ const (
 	CatalogSuffix    = ".json"
 )
 
-// Language detection and normalization.
+// Environment variables used for language detection.
 const (
-	DefaultLanguage                = "en"
-	LanguageEncodingSeparator byte = '.'
-	LanguageUnderscore             = "_"
-	LanguageDash                   = "-"
-	ChineseLanguage                = "zh-CN"
-	ChineseLanguageShort           = "zh"
-	ChineseLanguageCN              = "zh-cn"
-	ChineseLanguageHans            = "zh-hans"
-	ChineseLanguageHansCN          = "zh-hans-cn"
-	EnglishLanguage                = "en"
-	EnglishLanguageUS              = "en-us"
-	EnglishLanguageGB              = "en-gb"
-	LanguageC                      = "c"
-	LanguagePOSIX                  = "posix"
-
 	EnvLanguageOverride = "FWB_LANG"
 	EnvLocaleAll        = "LC_ALL"
 	EnvLocaleMessages   = "LC_MESSAGES"
@@ -47,11 +34,36 @@ const (
 
 // Catalog keys.
 const (
-	KeyHelpText             = "help.text"
-	KeyUnknownCommand       = "error.unknownCommand"
-	KeyUnknownConfigCommand = "error.unknownConfigCommand"
+	KeyCommandRoot            = "cli.root"
+	KeyCommandPing            = "cli.ping"
+	KeyCommandInstall         = "cli.install"
+	KeyCommandUninstall       = "cli.uninstall"
+	KeyCommandLaunch          = "cli.launch"
+	KeyCommandConfig          = "cli.config"
+	KeyCommandConfigSet       = "cli.config.set"
+	KeyCommandConfigGet       = "cli.config.get"
+	KeyCommandConfigUnset     = "cli.config.unset"
+	KeyCommandConfigList      = "cli.config.list"
+	KeyCommandInstallDevice   = "cli.installDevice"
+	KeyCommandUninstallDevice = "cli.uninstallDevice"
+	KeyCommandDoctor          = "cli.doctor"
+	KeyCommandClean           = "cli.clean"
+	KeyCommandVersion         = "cli.version"
+	KeyCommandHelp            = "cli.help"
 
-	KeyUsageConfig      = "usage.config"
+	KeyUnknownCommand = "error.unknownCommand"
+
+	KeyFlagHelp     = "cli.flag.help"
+	KeyFlagVersion  = "cli.flag.version"
+	KeyFlagAll      = "cli.flag.all"
+	KeyCleanFlagSDK = "cli.flag.sdk"
+
+	KeyUsageLabel        = "cli.usage"
+	KeyAvailableCommands = "cli.availableCommands"
+	KeyFlagsLabel        = "cli.flags"
+	KeyGlobalFlagsLabel  = "cli.globalFlags"
+	KeyHelpHint          = "cli.helpHint"
+
 	KeyUsageConfigSet   = "usage.config.set"
 	KeyUsageConfigGet   = "usage.config.get"
 	KeyUsageConfigUnset = "usage.config.unset"
@@ -75,10 +87,6 @@ const (
 	KeyDoctorStatusWarn = "doctor.status.warn"
 	KeyDoctorStatusFail = "doctor.status.fail"
 	KeyDoctorStatusInfo = "doctor.status.info"
-
-	KeyProgressDownloading        = "progress.downloading"
-	KeyProgressDownloadingUnknown = "progress.downloadingUnknown"
-	KeyProgressDone               = "progress.done"
 )
 
 // Output formats and prefixes.
@@ -93,7 +101,12 @@ const (
 )
 
 // Progress rendering.
-const ProgressThrottleInterval = 2 * time.Second
+const (
+	ProgressThrottleInterval  = 2 * time.Second
+	ProgressBarWidth          = 20
+	ProgressSpinnerType       = 14
+	ProgressDescriptionPrefix = "[fwb] "
+)
 
 // Process exit codes and fatal error output.
 const (

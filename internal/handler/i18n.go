@@ -3,96 +3,85 @@ package handler
 import (
 	"embed"
 	"encoding/json"
-	"fmt"
 	"os"
 	"strings"
 
-	"github.com/cylixlee/fwb/internal/consts"
 	"github.com/samber/lo"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
+	"golang.org/x/text/message/catalog"
+
+	"github.com/cylixlee/fwb/internal/consts"
 )
 
 //go:embed catalogs/*.json
 var catalogFS embed.FS
 
 var (
-	catalogs = map[string]map[string]string{}
-	current  = consts.DefaultLanguage
+	builder *catalog.Builder
+	matcher language.Matcher
+	printer *message.Printer
+	current language.Tag
 )
 
 // init loads the embedded catalogs and selects a language from the environment.
 func init() {
+	builder = catalog.NewBuilder(catalog.Fallback(language.English))
+	var tags []language.Tag
 	entries, err := catalogFS.ReadDir(consts.CatalogDirectory)
 	if err == nil {
-		for _, e := range entries {
-			name := strings.TrimSuffix(e.Name(), consts.CatalogSuffix)
-			data, err := catalogFS.ReadFile(consts.CatalogDirectory + consts.EmbedPathSeparator + e.Name())
+		for _, entry := range entries {
+			tag := language.Make(strings.TrimSuffix(entry.Name(), consts.CatalogSuffix))
+			data, err := catalogFS.ReadFile(consts.CatalogDirectory + consts.EmbedPathSeparator + entry.Name())
 			if err != nil {
 				continue
 			}
-			m := map[string]string{}
-			if json.Unmarshal(data, &m) == nil {
-				catalogs[name] = m
+			messages := map[string]string{}
+			if json.Unmarshal(data, &messages) != nil {
+				continue
 			}
+			for key, msg := range messages {
+				_ = builder.SetString(tag, key, msg)
+			}
+			tags = append(tags, tag)
 		}
 	}
-	lang, _ := lo.Coalesce(
+	matcher = language.NewMatcher(tags)
+	locale, _ := lo.Coalesce(
 		os.Getenv(consts.EnvLanguageOverride),
 		os.Getenv(consts.EnvLocaleAll),
 		os.Getenv(consts.EnvLocaleMessages),
 		os.Getenv(consts.EnvLang),
 	)
-	SetLanguage(lang)
+	SetLanguage(locale)
 }
 
 // SetLanguage selects a language, falling back to English.
-func SetLanguage(lang string) {
-	norm := normalize(lang)
-	if _, ok := catalogs[norm]; ok {
-		current = norm
-		return
-	}
-	if i := strings.IndexByte(norm, '-'); i > 0 {
-		if _, ok := catalogs[norm[:i]]; ok {
-			current = norm[:i]
-			return
-		}
-	}
-	current = consts.DefaultLanguage
+func SetLanguage(locale string) {
+	tag, _, _ := matcher.Match(parseLocale(locale))
+	current = tag
+	printer = message.NewPrinter(tag, message.Catalog(builder))
 }
 
-func normalize(lang string) string {
-	lang = strings.ToLower(strings.TrimSpace(lang))
-	if i := strings.IndexByte(lang, consts.LanguageEncodingSeparator); i >= 0 {
-		lang = lang[:i]
-	}
-	lang = strings.ReplaceAll(lang, consts.LanguageUnderscore, consts.LanguageDash)
-	switch lang {
-	case consts.ChineseLanguageShort, consts.ChineseLanguageCN, consts.ChineseLanguageHans, consts.ChineseLanguageHansCN:
-		return consts.ChineseLanguage
-	case consts.EnglishLanguage, consts.EnglishLanguageUS, consts.EnglishLanguageGB, consts.LanguageC, consts.LanguagePOSIX:
-		return consts.EnglishLanguage
-	}
-	return lang
-}
+// Current returns the selected language tag.
+func Current() string { return current.String() }
 
-// T returns the localized format string for key, formatted with args.
+// Translate formats the message identified by key for the current language.
 func Translate(key string, args ...any) string {
-	msg := lookup(current, key)
-	if msg == "" {
-		msg = lookup(consts.DefaultLanguage, key)
+	if printer == nil {
+		return key
 	}
-	if msg == "" {
-		msg = key
-	}
-	if len(args) == 0 {
-		return msg
-	}
-	return fmt.Sprintf(msg, args...)
+	return printer.Sprintf(key, args...)
 }
 
-func lookup(lang, key string) string {
-	if m, ok := catalogs[lang]; ok {
-		return m[key]
+func parseLocale(locale string) language.Tag {
+	locale = strings.TrimSpace(locale)
+	if i := strings.IndexByte(locale, '.'); i >= 0 {
+		locale = locale[:i]
 	}
-	return ""
+	locale = strings.ReplaceAll(locale, "_", "-")
+	if locale == "" {
+		return language.Und
+	}
+	return language.Make(locale)
 }

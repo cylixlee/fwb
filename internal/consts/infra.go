@@ -116,7 +116,8 @@ const (
 const (
 	DirectoryPermissions      = 0o755
 	FilePermissions           = 0o644
-	DownloadBufferSize        = 256 * 1024
+	DownloadUserAgent         = "fwb"
+	DownloadProgressInterval  = 500 * time.Millisecond
 	WinEnvCacheTTL            = 12 * time.Hour
 	HTTPResponseHeaderTimeout = 30 * time.Second
 )
