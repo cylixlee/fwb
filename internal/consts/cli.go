@@ -98,9 +98,27 @@ const (
 // Progress rendering.
 const (
 	ProgressThrottleInterval  = 2 * time.Second
+	ProgressLogInterval       = 10 * time.Second
 	ProgressBarWidth          = 20
 	ProgressSpinnerType       = 14
+	ProgressPercentScale      = 100
 	ProgressDescriptionPrefix = "[fwb] "
+)
+
+// Byte counts shown next to download progress.
+const (
+	ByteCountStep              = 1000
+	ByteCountFractionThreshold = 10
+	ByteCountFractionScale     = 10
+
+	ByteUnitByte     = "B"
+	ByteUnitKilobyte = "KB"
+	ByteUnitMegabyte = "MB"
+	ByteUnitGigabyte = "GB"
+
+	FormatByteCount         = "%d %s"
+	FormatByteCountWhole    = "%.0f %s"
+	FormatByteCountFraction = "%.1f %s"
 )
 
 // Process exit codes and fatal error output.

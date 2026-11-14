@@ -6,6 +6,11 @@ const (
 	ProgressKeyPrefix = "progress."
 )
 
+// Keys shared by every progress code.
+const (
+	KeyProgressLine = "progress.line"
+)
+
 // Application events emitted through the event reporter.
 const (
 	EventLaunchWSLVersion     = "launch.wslVersion"

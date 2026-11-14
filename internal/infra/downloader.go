@@ -97,6 +97,10 @@ func (d *downloader) download(ctx context.Context, url, dest string, progress fu
 			if err := response.Err(); err != nil {
 				return err
 			}
+			// Report the final byte count so the last frame is accurate.
+			if progress != nil {
+				progress(response.BytesComplete(), response.Size())
+			}
 			return os.Rename(part, dest)
 		case <-ctx.Done():
 			response.Cancel()

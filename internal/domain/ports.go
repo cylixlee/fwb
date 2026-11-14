@@ -129,5 +129,8 @@ type EventReporter interface {
 // Progress tracks a long-running operation.
 type OperationProgress interface {
 	Update(done, total int64)
+	// Done marks the operation as complete.
 	Done()
+	// Abort drops the progress without signalling completion.
+	Abort()
 }

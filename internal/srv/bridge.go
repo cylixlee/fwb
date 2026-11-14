@@ -262,10 +262,11 @@ func (s *Bridge) ensureSDK(ctx context.Context, want domain.FlutterVersion, rep 
 	archive := filepath.Join(sdkRoot, consts.SDKDownloadsDirectory, filepath.Base(release.Archive))
 	meter := startProgress(rep, consts.ProgressSDKDownload, want.Framework)
 	err = s.download.File(ctx, url, archive, meter.Update)
-	meter.Done()
 	if err != nil {
+		meter.Abort()
 		return nil, domain.WrapError(consts.ErrorCodeSDKDownload, err, url)
 	}
+	meter.Done()
 	defer os.Remove(archive)
 	if release.SHA256 != "" {
 		sum, err := s.sdk.Checksum(archive)
@@ -438,3 +439,4 @@ type nopProgress struct{}
 
 func (nopProgress) Update(int64, int64) {}
 func (nopProgress) Done()               {}
+func (nopProgress) Abort()              {}

@@ -25,8 +25,9 @@ var helpTemplate string
 
 // CLI is the cobra command handler.
 type CLI struct {
-	bridge *srv.Bridge
-	root   *cobra.Command
+	bridge   *srv.Bridge
+	root     *cobra.Command
+	reporter *reporter
 }
 
 // NewCLI builds the command tree using the configured language.
@@ -35,7 +36,7 @@ func NewCLI(bridge *srv.Bridge) *CLI {
 		SetLanguage(lang)
 	}
 	cobra.AddTemplateFunc("T", Translate)
-	cli := &CLI{bridge: bridge}
+	cli := &CLI{bridge: bridge, reporter: newStdoutReporter()}
 	cli.root = cli.newRoot()
 	return cli
 }
@@ -133,7 +134,7 @@ func (c *CLI) launchCommand() *cobra.Command {
 		Args:   argsAtLeast(1, consts.KeyUsageLaunch),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			options := strings.Join(args[1:], consts.ArgumentSeparator)
-			return c.bridge.Launch(cmd.Context(), options, os.Stdout, reporter{})
+			return c.bridge.Launch(cmd.Context(), options, os.Stdout, c.reporter)
 		},
 	}
 	// Flutter expands ${engineOptions} into separate argv entries that start

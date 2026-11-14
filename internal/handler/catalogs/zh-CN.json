@@ -76,6 +76,7 @@
   "sdk.extracting": "解压到 %s",
   "sdk.ready": "Flutter SDK 就绪",
   "progress.sdk.download": "Flutter SDK %s",
+  "progress.line": "%s %d%%（%s/%s）",
 
   "err.internal": "内部错误",
   "err.config.read": "读取 %s 失败",
