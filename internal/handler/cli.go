@@ -126,19 +126,20 @@ func (c *CLI) uninstallCommand() *cobra.Command {
 }
 
 func (c *CLI) launchCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:    consts.CommandLaunch + " <appName> [engineOptions]",
 		Short:  Translate(consts.KeyCommandLaunch),
 		Hidden: true,
-		Args:   argsRange(1, 5, consts.KeyUsageLaunch),
+		Args:   argsAtLeast(1, consts.KeyUsageLaunch),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			options := ""
-			if len(args) > 1 {
-				options = args[1]
-			}
+			options := strings.Join(args[1:], consts.ArgumentSeparator)
 			return c.bridge.Launch(cmd.Context(), options, os.Stdout, reporter{})
 		},
 	}
+	// Flutter expands ${engineOptions} into separate argv entries that start
+	// with "--"; stop flag parsing after the app name.
+	cmd.Flags().SetInterspersed(false)
+	return cmd
 }
 
 func (c *CLI) configCommand() *cobra.Command {
@@ -384,15 +385,6 @@ func argsExactly(n int, usageKey string) cobra.PositionalArgs {
 func argsAtLeast(n int, usageKey string) cobra.PositionalArgs {
 	return func(cmd *cobra.Command, args []string) error {
 		if len(args) < n {
-			return errors.New(Translate(usageKey))
-		}
-		return nil
-	}
-}
-
-func argsRange(min, max int, usageKey string) cobra.PositionalArgs {
-	return func(cmd *cobra.Command, args []string) error {
-		if len(args) < min || len(args) > max {
 			return errors.New(Translate(usageKey))
 		}
 		return nil

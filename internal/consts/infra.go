@@ -117,6 +117,8 @@ const (
 	DirectoryPermissions      = 0o755
 	FilePermissions           = 0o644
 	DownloadUserAgent         = "fwb"
+	DownloadAttempts          = 3
+	DownloadRetryDelay        = 2 * time.Second
 	DownloadProgressInterval  = 500 * time.Millisecond
 	WinEnvCacheTTL            = 12 * time.Hour
 	HTTPResponseHeaderTimeout = 30 * time.Second
