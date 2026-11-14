@@ -84,6 +84,9 @@ func (d *downloader) download(ctx context.Context, url, dest string, progress fu
 		return err
 	}
 	response := d.grab.Do(req.WithContext(ctx))
+	// Cancel is idempotent and must also run after a completed transfer: grab
+	// derives its own context from ctx and releases it on no other path.
+	defer response.Cancel()
 
 	ticker := time.NewTicker(consts.DownloadProgressInterval)
 	defer ticker.Stop()
@@ -103,7 +106,6 @@ func (d *downloader) download(ctx context.Context, url, dest string, progress fu
 			}
 			return os.Rename(part, dest)
 		case <-ctx.Done():
-			response.Cancel()
 			return ctx.Err()
 		}
 	}

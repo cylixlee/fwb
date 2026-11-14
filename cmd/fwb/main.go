@@ -19,6 +19,12 @@ import (
 )
 
 func main() {
+	os.Exit(execute())
+}
+
+// execute runs one command and returns its exit status. The deferred teardown
+// has to run before the process exits, so os.Exit stays in main.
+func execute() int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	exitCode := consts.ExitFailure
@@ -45,9 +51,7 @@ func main() {
 
 	if err := app.Start(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, consts.ErrorOutputFormat, err)
-		os.Exit(consts.ExitFailure)
+		return consts.ExitFailure
 	}
-	if exitCode != consts.ExitSuccess {
-		os.Exit(exitCode)
-	}
+	return exitCode
 }

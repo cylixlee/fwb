@@ -41,7 +41,7 @@ func init() {
 				continue
 			}
 			for key, msg := range messages {
-				_ = builder.SetString(tag, key, msg)
+				builder.SetString(tag, key, msg)
 			}
 			tags = append(tags, tag)
 		}

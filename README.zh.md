@@ -50,7 +50,7 @@ go install github.com/cylixlee/fwb/cmd/fwb@latest
 ```bash
 git clone https://github.com/cylixlee/fwb
 cd fwb
-go install ./cmd/fwb
+make install
 ```
 
 二进制会装到 `$(go env GOPATH)/bin`，确保它在 `PATH` 里。
@@ -219,13 +219,10 @@ flutter create --platforms=windows .
 ## 开发
 
 ```bash
-go fmt ./...
-go build ./...
-go vet ./...
-go test ./...
+make check
 ```
 
-四项必须全绿。分层、命名、i18n、资源管理规范见 [AGENTS.md](AGENTS.md)。
+它会跑 `go build`、`go fix`、`go fmt`、`go vet` 和 `go test`，必须全绿。分层、命名、i18n、资源管理规范见 [AGENTS.md](AGENTS.md)。
 
 ## 许可证
 

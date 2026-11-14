@@ -148,13 +148,10 @@ File names:
 ## 11. Checks and tests
 
 ```bash
-go fmt ./...      # use `go fmt`, not bare `gofmt`
-go build ./...
-go vet ./...
-go test ./...
+make check
 ```
 
-All four must pass before committing.
+It runs `go build`, `go fix`, `go fmt`, `go vet` and `go test` over the module and must pass before committing. Do not run those commands by hand.
 
 - `domain`: pure logic, table-driven.
 - `handler`: catalog key parity, placeholder parity, language selection, argument formatting.

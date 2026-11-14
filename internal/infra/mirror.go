@@ -124,7 +124,7 @@ func (m *projectMirror) WriteSession(pid int) error {
 	return os.WriteFile(m.SessionFile(), []byte(strconv.Itoa(pid)), consts.FilePermissions)
 }
 
-func (m *projectMirror) ClearSession() { _ = os.Remove(m.SessionFile()) }
+func (m *projectMirror) ClearSession() { os.Remove(m.SessionFile()) }
 
 func (m *projectMirror) Stage(localPath string) error {
 	src, err := filepath.Abs(localPath)

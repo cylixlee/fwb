@@ -50,7 +50,7 @@ From a checkout:
 ```bash
 git clone https://github.com/cylixlee/fwb
 cd fwb
-go install ./cmd/fwb
+make install
 ```
 
 The binary goes to `$(go env GOPATH)/bin`. Make sure that directory is on `PATH`.
@@ -219,13 +219,10 @@ A Flutter tool shutdown race, not FWB. The app still exits. Use `q` for a clean 
 ## Development
 
 ```bash
-go fmt ./...
-go build ./...
-go vet ./...
-go test ./...
+make check
 ```
 
-All four must pass. Architecture, layering, naming, i18n, and resource rules are in [AGENTS.md](AGENTS.md).
+It runs `go build`, `go fix`, `go fmt`, `go vet` and `go test`; it must pass. Architecture, layering, naming, i18n, and resource rules are in [AGENTS.md](AGENTS.md).
 
 ## License
 

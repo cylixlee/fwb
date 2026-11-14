@@ -424,6 +424,6 @@ func cachedEnv(ctx context.Context) (domain.WindowsEnvironment, error) {
 		consts.JSONOSVersion:       env.OSVersion,
 		consts.JSONFetchedAt:       time.Now().Unix(),
 	}
-	_ = fsx.WriteJSONAtomic(path, payload, consts.FilePermissions)
+	fsx.WriteJSONAtomic(path, payload, consts.FilePermissions)
 	return env, nil
 }

@@ -60,7 +60,7 @@ func (r *reporter) StartProgress(code string, args ...any) domain.OperationProgr
 		progressbar.OptionSpinnerType(consts.ProgressSpinnerType),
 		progressbar.OptionEnableColorCodes(false),
 		progressbar.OptionOnCompletion(func() {
-			_, _ = fmt.Fprintln(r.out)
+			fmt.Fprintln(r.out)
 		}),
 	)
 	return &barProgress{bar: bar}
@@ -77,16 +77,16 @@ func (p *barProgress) Update(done, total int64) {
 		p.total = total
 		p.bar.ChangeMax64(total)
 	}
-	_ = p.bar.Set64(done)
+	p.bar.Set64(done)
 }
 
 func (p *barProgress) Done() {
-	_ = p.bar.Finish()
+	p.bar.Finish()
 }
 
 // Abort keeps the partial line instead of claiming completion.
 func (p *barProgress) Abort() {
-	_ = p.bar.Exit()
+	p.bar.Exit()
 }
 
 // lineProgress renders one line per interval for non-terminal writers.

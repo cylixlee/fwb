@@ -81,29 +81,29 @@ func (s *Bridge) Uninstall(ctx context.Context) error {
 
 // Launch performs the slow path: SDK, native build when needed, bundle merge,
 // then starts the app and streams its logs.
-func (s *Bridge) Launch(ctx context.Context, engineOptions string, out io.Writer, rep domain.EventReporter) error {
+func (s *Bridge) Launch(ctx context.Context, engineOptions string, out io.Writer, rep domain.EventReporter) (err error) {
 	m, err := s.mirror(ctx)
 	if err != nil {
-		return err
+		return
 	}
 	want, err := s.flutter.Version(ctx)
 	if err != nil {
-		return err
+		return
 	}
 	event(rep, consts.EventLaunchWSLVersion, want.Framework, want.ShortEngine())
 
 	sdk, err := s.ensureSDK(ctx, want, rep)
 	if err != nil {
-		return err
+		return
 	}
 
 	fingerprint, err := m.Fingerprint(want.EngineRevision)
 	if err != nil {
-		return err
+		return
 	}
 	state, err := m.LoadState()
 	if err != nil {
-		return err
+		return
 	}
 	buildDir, exe, locateErr := m.Locate(consts.DebugBuildMode)
 	needsBuild := locateErr != nil ||
@@ -143,18 +143,22 @@ func (s *Bridge) Launch(ctx context.Context, engineOptions string, out io.Writer
 	s.stop(ctx, m)
 
 	event(rep, consts.EventLaunchStarting, filepath.Base(exe))
+	// The runner records its pid in the session file: stop the app when the log
+	// stream fails, otherwise drop the stale session.
+	defer func() {
+		if err != nil {
+			s.stop(ctx, m)
+			return
+		}
+		m.ClearSession()
+	}()
 	err = s.host.Run(ctx, domain.WindowsRunRequest{
 		Exe:         exe,
 		Dir:         filepath.Dir(exe),
 		SessionFile: m.SessionFile(),
 		Switches:    domain.ParseEngineSwitches(engineOptions),
 	}, out, out)
-	if err != nil {
-		s.stop(ctx, m)
-	} else {
-		m.ClearSession()
-	}
-	return err
+	return
 }
 
 func (s *Bridge) mirror(ctx context.Context) (domain.ProjectMirror, error) {
@@ -170,11 +174,11 @@ func (s *Bridge) stop(ctx context.Context, m domain.ProjectMirror) {
 	if !ok {
 		return
 	}
+	defer m.ClearSession()
 	// The launch context is already canceled when Flutter quits the hook.
 	stopCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), consts.StopTimeout)
 	defer cancel()
-	_ = s.host.Stop(stopCtx, pid)
-	m.ClearSession()
+	s.host.Stop(stopCtx, pid)
 }
 
 func (s *Bridge) buildRequest(ctx context.Context, sdk *domain.WindowsSDK, m domain.ProjectMirror) (domain.WindowsBuildRequest, error) {
@@ -260,14 +264,13 @@ func (s *Bridge) ensureSDK(ctx context.Context, want domain.FlutterVersion, rep 
 		return nil, err
 	}
 	archive := filepath.Join(sdkRoot, consts.SDKDownloadsDirectory, filepath.Base(release.Archive))
+	// Register the cleanup before the download: a failed or aborted transfer
+	// must not leave a multi-gigabyte archive behind.
+	defer os.Remove(archive)
 	meter := startProgress(rep, consts.ProgressSDKDownload, want.Framework)
-	err = s.download.File(ctx, url, archive, meter.Update)
-	if err != nil {
-		meter.Abort()
+	if err := s.downloadSDK(ctx, url, archive, meter); err != nil {
 		return nil, domain.WrapError(consts.ErrorCodeSDKDownload, err, url)
 	}
-	meter.Done()
-	defer os.Remove(archive)
 	if release.SHA256 != "" {
 		sum, err := s.sdk.Checksum(archive)
 		if err != nil {
@@ -294,6 +297,19 @@ func (s *Bridge) ensureSDK(ctx context.Context, want domain.FlutterVersion, rep 
 	}
 	event(rep, consts.EventSDKReady)
 	return sdk, nil
+}
+
+// downloadSDK streams the archive through the meter. The meter is finished on
+// every path: a failed transfer aborts it instead of claiming completion.
+func (s *Bridge) downloadSDK(ctx context.Context, url, archive string, meter domain.OperationProgress) (err error) {
+	defer func() {
+		if err != nil {
+			meter.Abort()
+			return
+		}
+		meter.Done()
+	}()
+	return s.download.File(ctx, url, archive, meter.Update)
 }
 
 // RegisterDevice stores the custom-device entry. The label is supplied by the
