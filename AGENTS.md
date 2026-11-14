@@ -67,7 +67,7 @@ Prefer, in order:
 2. A helper in `pkg/` (when no library exists, or the wrapper carries project policy).
 3. An inline implementation (last resort).
 
-Never hand-roll standard infrastructure. Current precedent:
+Never hand-roll standard infrastructure. A library that solves part of the problem still wins: keep only the project policy around it and write by hand only what no maintained package covers. Current precedent:
 
 | Concern                    | Library                     |
 | -------------------------- | --------------------------- |
@@ -78,6 +78,8 @@ Never hand-roll standard infrastructure. Current precedent:
 | downloads                  | `cavaliergopher/grab/v3`    |
 | HTTP requests              | `carlmjohnson/requests`     |
 | progress bars              | `schollz/progressbar/v3`    |
+| byte sizes                 | `dustin/go-humanize`        |
+| rate limiting              | `golang.org/x/time/rate`    |
 | recursive copy             | `otiai10/copy`              |
 | atomic writes              | `google/renameio/v2`        |
 | slugs                      | `gosimple/slug`             |

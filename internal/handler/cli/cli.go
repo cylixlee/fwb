@@ -98,15 +98,6 @@ func (c *Struct) newRoot() *cobra.Command {
 	return root
 }
 
-func findCommand(parent *cobra.Command, name string) *cobra.Command {
-	for _, child := range parent.Commands() {
-		if child.Name() == name {
-			return child
-		}
-	}
-	return nil
-}
-
 func (c *Struct) unknownCommand(args []string) string {
 	cmd := c.root
 	for _, arg := range args {
@@ -119,8 +110,8 @@ func (c *Struct) unknownCommand(args []string) string {
 		if len(cmd.Commands()) == 0 {
 			return ""
 		}
-		next := findCommand(cmd, arg)
-		if next == nil {
+		next, _, err := cmd.Find([]string{arg})
+		if err != nil || next == cmd {
 			return arg
 		}
 		cmd = next

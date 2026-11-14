@@ -3,24 +3,16 @@ package handler
 import (
 	"fmt"
 	"io"
-	"math"
 	"os"
-	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/schollz/progressbar/v3"
 	"golang.org/x/term"
+	"golang.org/x/time/rate"
 
 	"github.com/cylixlee/fwb/internal/consts"
 	"github.com/cylixlee/fwb/internal/domain"
 )
-
-// byteUnits are the decimal suffixes used to render byte counts.
-var byteUnits = [...]string{
-	consts.ByteUnitByte,
-	consts.ByteUnitKilobyte,
-	consts.ByteUnitMegabyte,
-	consts.ByteUnitGigabyte,
-}
 
 // reporter implements domain.EventReporter for the CLI.
 type reporter struct {
@@ -47,7 +39,11 @@ func (r *reporter) Event(code string, args ...any) {
 func (r *reporter) StartProgress(code string, args ...any) domain.OperationProgress {
 	text := Translate(consts.ProgressKeyPrefix+code, args...)
 	if !r.interactive {
-		return &lineProgress{out: r.out, label: text}
+		return &lineProgress{
+			out:     r.out,
+			label:   text,
+			limiter: rate.NewLimiter(rate.Every(consts.ProgressLogInterval), 1),
+		}
 	}
 	bar := progressbar.NewOptions64(
 		-1,
@@ -96,7 +92,7 @@ type lineProgress struct {
 	done    int64
 	total   int64
 	printed int64
-	shown   time.Time
+	limiter *rate.Limiter
 }
 
 func (p *lineProgress) Update(done, total int64) {
@@ -104,7 +100,7 @@ func (p *lineProgress) Update(done, total int64) {
 	if total > 0 {
 		p.total = total
 	}
-	if time.Since(p.shown) < consts.ProgressLogInterval {
+	if p.total <= 0 || !p.limiter.Allow() {
 		return
 	}
 	p.print()
@@ -112,7 +108,7 @@ func (p *lineProgress) Update(done, total int64) {
 
 func (p *lineProgress) Done() {
 	// Skip the final line when it would repeat the last one.
-	if p.done == p.printed {
+	if p.total <= 0 || p.done == p.printed {
 		return
 	}
 	p.print()
@@ -122,37 +118,11 @@ func (p *lineProgress) Done() {
 func (p *lineProgress) Abort() {}
 
 func (p *lineProgress) print() {
-	if p.total <= 0 {
-		return
-	}
-	p.shown = time.Now()
 	p.printed = p.done
 	fmt.Fprintf(p.out, consts.FormatLogEvent, Translate(consts.KeyProgressLine,
 		p.label,
 		p.done*consts.ProgressPercentScale/p.total,
-		formatByteCount(p.done),
-		formatByteCount(p.total),
+		humanize.Bytes(uint64(p.done)),
+		humanize.Bytes(uint64(p.total)),
 	))
-}
-
-// formatByteCount renders a byte count with a decimal unit, mirroring the
-// progress bar: whole units from ten upwards, one decimal below.
-func formatByteCount(n int64) string {
-	if n < consts.ByteCountStep {
-		return fmt.Sprintf(consts.FormatByteCount, n, consts.ByteUnitByte)
-	}
-	value := float64(n)
-	unit := 0
-	for value >= consts.ByteCountStep && unit < len(byteUnits)-1 {
-		value /= consts.ByteCountStep
-		unit++
-	}
-	// Decide the precision on the rounded value so 9999 bytes renders as
-	// 10 KB rather than 10.0 KB.
-	value = math.Round(value*consts.ByteCountFractionScale) / consts.ByteCountFractionScale
-	format := consts.FormatByteCountWhole
-	if value < consts.ByteCountFractionThreshold {
-		format = consts.FormatByteCountFraction
-	}
-	return fmt.Sprintf(format, value, byteUnits[unit])
 }

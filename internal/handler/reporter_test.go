@@ -76,22 +76,3 @@ func TestAbortNeverClaimsCompletion(t *testing.T) {
 		t.Errorf("aborted progress claimed completion: %q", out.String())
 	}
 }
-
-func TestFormatByteCount(t *testing.T) {
-	tests := []struct {
-		bytes int64
-		want  string
-	}{
-		{0, "0 B"},
-		{999, "999 B"},
-		{1000, "1.0 KB"},
-		{9999, "10 KB"},
-		{14_000_000, "14 MB"},
-		{1_900_000_000, "1.9 GB"},
-	}
-	for _, test := range tests {
-		if got := formatByteCount(test.bytes); got != test.want {
-			t.Errorf("formatByteCount(%d) = %q, want %q", test.bytes, got, test.want)
-		}
-	}
-}

@@ -5,6 +5,7 @@ go 1.27.3
 require (
 	github.com/carlmjohnson/requests v0.26.3
 	github.com/cavaliergopher/grab/v3 v3.0.1
+	github.com/dustin/go-humanize v1.1.0
 	github.com/google/renameio/v2 v2.0.2
 	github.com/gosimple/slug v1.15.0
 	github.com/jeandeaual/go-locale v0.0.0-20250612000132-0ef82f21eade
@@ -16,6 +17,7 @@ require (
 	golang.org/x/mod v0.43.0
 	golang.org/x/term v0.47.0
 	golang.org/x/text v0.43.0
+	golang.org/x/time v0.16.0
 )
 
 require (
