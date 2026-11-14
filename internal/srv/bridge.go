@@ -149,7 +149,11 @@ func (s *Bridge) Launch(ctx context.Context, engineOptions string, out io.Writer
 		SessionFile: m.SessionFile(),
 		Switches:    domain.ParseEngineSwitches(engineOptions),
 	}, out, out)
-	m.ClearSession()
+	if err != nil {
+		s.stop(ctx, m)
+	} else {
+		m.ClearSession()
+	}
 	return err
 }
 
@@ -162,9 +166,14 @@ func (s *Bridge) mirror(ctx context.Context) (domain.ProjectMirror, error) {
 }
 
 func (s *Bridge) stop(ctx context.Context, m domain.ProjectMirror) {
-	if pid, ok := m.SessionPID(); ok {
-		_ = s.host.Stop(ctx, pid)
+	pid, ok := m.SessionPID()
+	if !ok {
+		return
 	}
+	// The launch context is already canceled when Flutter quits the hook.
+	stopCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), consts.StopTimeout)
+	defer cancel()
+	_ = s.host.Stop(stopCtx, pid)
 	m.ClearSession()
 }
 

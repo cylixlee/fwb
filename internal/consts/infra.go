@@ -33,6 +33,7 @@ const (
 	EngineSwitchVariablePrefix = "FLUTTER_ENGINE_SWITCH_"
 	SessionFileEncoding        = "ASCII"
 	ProcessCloseTimeoutMillis  = 800
+	StopTimeout                = 5 * time.Second
 
 	ScriptEnvironment    = "env.ps1.tmpl"
 	ScriptPowerShellInfo = "psinfo.ps1"
