@@ -69,6 +69,7 @@
         "action": "deny",
         "reason": "Do not rely on python or other interpreter. This is very dangerous and could bypass permission system."
       },
+      "go *": "allow",
       "gofmt *": {
         "action": "deny",
         "reason": "Use `go fmt` instead."
