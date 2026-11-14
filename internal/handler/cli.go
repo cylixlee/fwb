@@ -130,9 +130,12 @@ func (c *CLI) launchCommand() *cobra.Command {
 		Use:    consts.CommandLaunch + " <appName> [engineOptions]",
 		Short:  Translate(consts.KeyCommandLaunch),
 		Hidden: true,
-		Args:   argsRange(1, 2, consts.KeyUsageLaunch),
+		Args:   argsRange(1, 5, consts.KeyUsageLaunch),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			options := strings.Join(args[1:], consts.ArgumentSeparator)
+			options := ""
+			if len(args) > 1 {
+				options = args[1]
+			}
 			return c.bridge.Launch(cmd.Context(), options, os.Stdout, reporter{})
 		},
 	}
