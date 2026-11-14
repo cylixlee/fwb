@@ -60,7 +60,7 @@ func TestCatalogPlaceholdersMatchAcrossLanguages(t *testing.T) {
 }
 
 func TestLanguageSelection(t *testing.T) {
-	SetLanguage("zh_CN.UTF-8")
+	SetLanguage("zh-CN")
 	if got := Current(); got != "zh-CN" {
 		t.Fatalf("Current() = %q, want zh-CN", got)
 	}

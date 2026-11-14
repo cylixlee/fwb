@@ -24,13 +24,8 @@ const (
 	CatalogSuffix    = ".json"
 )
 
-// Environment variables used for language detection.
-const (
-	EnvLanguageOverride = "FWB_LANG"
-	EnvLocaleAll        = "LC_ALL"
-	EnvLocaleMessages   = "LC_MESSAGES"
-	EnvLang             = "LANG"
-)
+// Environment variable used for an explicit language override.
+const EnvLanguageOverride = "FWB_LANG"
 
 // Catalog keys.
 const (

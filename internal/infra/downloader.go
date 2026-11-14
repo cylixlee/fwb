@@ -1,13 +1,15 @@
 package infra
 
 import (
+	"bytes"
 	"context"
-	"io"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/carlmjohnson/requests"
 	"github.com/cavaliergopher/grab/v3"
 	"github.com/cylixlee/fwb/internal/consts"
 	"github.com/cylixlee/fwb/internal/domain"
@@ -33,19 +35,18 @@ func NewDownloader() domain.Downloader {
 }
 
 func (d *downloader) Bytes(ctx context.Context, url string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	var body bytes.Buffer
+	err := requests.URL(url).
+		Client(d.http).
+		ToBytesBuffer(&body).
+		Fetch(ctx)
 	if err != nil {
+		if responseErr, ok := errors.AsType[*requests.ResponseError](err); ok {
+			return nil, domain.NewError(consts.ErrorCodeHTTPStatus, url, responseErr.Status)
+		}
 		return nil, err
 	}
-	resp, err := d.http.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, domain.NewError(consts.ErrorCodeHTTPStatus, url, resp.Status)
-	}
-	return io.ReadAll(resp.Body)
+	return body.Bytes(), nil
 }
 
 func (d *downloader) File(ctx context.Context, url, dest string, progress func(done, total int64)) error {

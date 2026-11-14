@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/samber/lo"
+	"github.com/jeandeaual/go-locale"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"golang.org/x/text/message/catalog"
@@ -47,18 +47,30 @@ func init() {
 		}
 	}
 	matcher = language.NewMatcher(tags)
-	locale, _ := lo.Coalesce(
-		os.Getenv(consts.EnvLanguageOverride),
-		os.Getenv(consts.EnvLocaleAll),
-		os.Getenv(consts.EnvLocaleMessages),
-		os.Getenv(consts.EnvLang),
-	)
-	SetLanguage(locale)
+	if override := os.Getenv(consts.EnvLanguageOverride); override != "" {
+		SetLanguage(override)
+		return
+	}
+	locales, err := locale.GetLocales()
+	if err != nil || len(locales) == 0 {
+		SetLanguage(language.English.String())
+		return
+	}
+	SetLanguage(locales...)
 }
 
-// SetLanguage selects a language, falling back to English.
-func SetLanguage(locale string) {
-	tag, _, _ := matcher.Match(parseLocale(locale))
+// SetLanguage selects the first matching language, falling back to English.
+func SetLanguage(locales ...string) {
+	tags := make([]language.Tag, 0, len(locales))
+	for _, locale := range locales {
+		if locale != "" {
+			tags = append(tags, language.Make(locale))
+		}
+	}
+	if len(tags) == 0 {
+		tags = append(tags, language.English)
+	}
+	tag, _, _ := matcher.Match(tags...)
 	current = tag
 	printer = message.NewPrinter(tag, message.Catalog(builder))
 }
@@ -72,16 +84,4 @@ func Translate(key string, args ...any) string {
 		return key
 	}
 	return printer.Sprintf(key, args...)
-}
-
-func parseLocale(locale string) language.Tag {
-	locale = strings.TrimSpace(locale)
-	if i := strings.IndexByte(locale, '.'); i >= 0 {
-		locale = locale[:i]
-	}
-	locale = strings.ReplaceAll(locale, "_", "-")
-	if locale == "" {
-		return language.Und
-	}
-	return language.Make(locale)
 }
