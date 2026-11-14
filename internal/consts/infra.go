@@ -167,4 +167,9 @@ const (
 )
 
 // Version defaults.
-const DefaultBuildVersion = "dev"
+const (
+	DefaultBuildVersion     = "v0.0.0-dev"
+	DevelopmentVersion      = "(devel)"
+	BuildSettingVCSRevision = "vcs.revision"
+	VCSRevisionShortLength  = 12
+)

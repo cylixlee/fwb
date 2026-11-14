@@ -13,6 +13,7 @@ require (
 	github.com/schollz/progressbar/v3 v3.19.1
 	github.com/spf13/cobra v1.10.2
 	go.uber.org/fx v1.24.0
+	golang.org/x/mod v0.43.0
 	golang.org/x/text v0.43.0
 )
 

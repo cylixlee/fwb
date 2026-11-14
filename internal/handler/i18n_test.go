@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/mod/semver"
+
 	"github.com/cylixlee/fwb/internal/consts"
 )
 
@@ -92,5 +94,11 @@ func TestTranslateErrorVerb(t *testing.T) {
 	got := Translate("doctor.wsl.fail", errors.New("boom"))
 	if !strings.Contains(got, "boom") {
 		t.Fatalf("Translate did not format %%v: %q", got)
+	}
+}
+
+func TestModuleVersion(t *testing.T) {
+	if got := moduleVersion(); !semver.IsValid(got) {
+		t.Fatalf("version is not semver: %q", got)
 	}
 }

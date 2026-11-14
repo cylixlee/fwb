@@ -6,17 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"strings"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/mod/semver"
 
 	"github.com/cylixlee/fwb/internal/consts"
 	"github.com/cylixlee/fwb/internal/domain"
 	"github.com/cylixlee/fwb/internal/srv"
 )
-
-// BuildVersion is overridden at build time with -ldflags.
-var BuildVersion = consts.DefaultBuildVersion
 
 //go:embed templates/usage.tmpl
 var usageTemplate string
@@ -301,7 +300,7 @@ func (c *CLI) helpCommand() *cobra.Command {
 }
 
 func (c *CLI) printVersion() error {
-	fmt.Printf(consts.FormatVersion, BuildVersion, Current())
+	fmt.Printf(consts.FormatVersion, moduleVersion(), Current())
 	return nil
 }
 
@@ -403,4 +402,32 @@ func applyTemplates(cmd *cobra.Command) {
 	for _, child := range cmd.Commands() {
 		applyTemplates(child)
 	}
+}
+
+// moduleVersion returns a semver version. For `go install module@version` this
+// is the module version recorded by the toolchain; for working-tree builds it
+// falls back to v0.0.0-dev (plus the VCS revision when available).
+func moduleVersion() string {
+	info, ok := debug.ReadBuildInfo()
+	if ok {
+		if semver.IsValid(info.Main.Version) {
+			return info.Main.Version
+		}
+		if revision := buildSetting(info, consts.BuildSettingVCSRevision); revision != "" {
+			if len(revision) > consts.VCSRevisionShortLength {
+				revision = revision[:consts.VCSRevisionShortLength]
+			}
+			return consts.DefaultBuildVersion + "+" + revision
+		}
+	}
+	return consts.DefaultBuildVersion
+}
+
+func buildSetting(info *debug.BuildInfo, key string) string {
+	for _, setting := range info.Settings {
+		if setting.Key == key {
+			return setting.Value
+		}
+	}
+	return ""
 }
